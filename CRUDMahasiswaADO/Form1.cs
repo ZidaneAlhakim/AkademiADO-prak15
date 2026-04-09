@@ -2,7 +2,7 @@
 using System.Data;
 using System.Data.SqlClient;
 using System.Windows.Forms;
-using System.Text.RegularExpressions; // Dibutuhkan untuk validasi Regex
+using System.Text.RegularExpressions;
 
 namespace CRUDMahasiswaADO
 {
@@ -41,10 +41,8 @@ namespace CRUDMahasiswaADO
             txtNIM.Focus();
         }
 
-        // FUNGSI VALIDASI INPUT (Constraint Application Side)
         private bool IsInputValid()
         {
-            // 1. Validasi NIM: Harus Angka dan sesuai panjang database (CHAR 11)
             if (!Regex.IsMatch(txtNIM.Text, @"^\d+$"))
             {
                 MessageBox.Show("NIM harus berupa angka saja!", "Validasi Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -56,33 +54,21 @@ namespace CRUDMahasiswaADO
                 MessageBox.Show("NIM tidak boleh lebih dari 11 karakter!", "Validasi Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
-            // 2. Validasi Nama: Tidak boleh kosong
             if (string.IsNullOrWhiteSpace(txtNama.Text))
             {
                 MessageBox.Show("Nama Mahasiswa wajib diisi!", "Validasi Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
-            // 3. Validasi Jenis Kelamin: Harus dipilih (Check Constraint L/P)
             if (cmbJK.SelectedIndex == -1)
             {
                 MessageBox.Show("Pilih Jenis Kelamin!", "Validasi Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
-            // 4. Validasi Kode Prodi: Harus diisi dan sesuai panjang (CHAR 4)
             if (string.IsNullOrWhiteSpace(txtkodeProdi.Text))
             {
                 MessageBox.Show("Kode Prodi wajib diisi!", "Validasi Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-            if (txtkodeProdi.Text.Length > 4)
-            {
-                MessageBox.Show("Kode Prodi maksimal 4 karakter (Contoh: TI01)!", "Validasi Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
             return true;
         }
 
@@ -91,11 +77,12 @@ namespace CRUDMahasiswaADO
             try
             {
                 if (conn.State == ConnectionState.Closed) conn.Open();
-                MessageBox.Show("Koneksi ke database berhasil!");
+                // Pop-up Informasi Koneksi
+                MessageBox.Show("Koneksi ke database berhasil!", "Status Koneksi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Koneksi gagal: " + ex.Message);
+                MessageBox.Show("Koneksi gagal: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -119,6 +106,7 @@ namespace CRUDMahasiswaADO
                 SqlCommand cmd = new SqlCommand(query, conn);
                 SqlDataReader reader = cmd.ExecuteReader();
 
+                int count = 0;
                 while (reader.Read())
                 {
                     dataGridView1.Rows.Add(
@@ -129,8 +117,12 @@ namespace CRUDMahasiswaADO
                         reader["Alamat"].ToString(),
                         reader["KodeProdi"].ToString()
                     );
+                    count++;
                 }
                 reader.Close();
+
+                // Pop-up Informasi Jumlah Data yang Dimuat
+                MessageBox.Show($"Berhasil memuat {count} data mahasiswa.", "Informasi Data", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -140,8 +132,13 @@ namespace CRUDMahasiswaADO
 
         private void btnInsert_Click(object sender, EventArgs e)
         {
-            // Jalankan Validasi sebelum eksekusi SQL
             if (!IsInputValid()) return;
+
+            // POP-UP BARU: Konfirmasi sebelum menyimpan
+            DialogResult dialogResult = MessageBox.Show($"Yakin ingin menambah data Mahasiswa:\nNIM: {txtNIM.Text}\nNama: {txtNama.Text}?",
+                                        "Konfirmasi Tambah Data", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (dialogResult == DialogResult.No) return;
 
             try
             {
@@ -161,16 +158,15 @@ namespace CRUDMahasiswaADO
                 int result = cmd.ExecuteNonQuery();
                 if (result > 0)
                 {
-                    MessageBox.Show("Data berhasil ditambahkan!");
+                    MessageBox.Show("Data mahasiswa berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     ClearForm();
                     btnLoad_Click(null, null);
                 }
             }
             catch (SqlException ex)
             {
-                // Menangani error constraint dari sisi SQL Server
-                if (ex.Number == 2627) MessageBox.Show("NIM sudah ada di database (Duplicate Primary Key)!");
-                else if (ex.Number == 547) MessageBox.Show("Kode Prodi tidak terdaftar di tabel Program Studi (Foreign Key Error)!");
+                if (ex.Number == 2627) MessageBox.Show("NIM sudah ada di database!", "Primary Key Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                else if (ex.Number == 547) MessageBox.Show("Kode Prodi tidak terdaftar!", "Foreign Key Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 else MessageBox.Show("Error Database: " + ex.Message);
             }
         }
@@ -178,6 +174,12 @@ namespace CRUDMahasiswaADO
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             if (!IsInputValid()) return;
+
+            // POP-UP BARU: Konfirmasi sebelum mengubah
+            DialogResult dialogResult = MessageBox.Show($"Simpan perubahan untuk NIM: {txtNIM.Text}?",
+                                        "Konfirmasi Update", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (dialogResult == DialogResult.No) return;
 
             try
             {
@@ -198,7 +200,7 @@ namespace CRUDMahasiswaADO
                 int result = cmd.ExecuteNonQuery();
                 if (result > 0)
                 {
-                    MessageBox.Show("Data berhasil diupdate!");
+                    MessageBox.Show("Data berhasil diperbarui!", "Update Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     btnLoad_Click(null, null);
                 }
                 else
@@ -216,11 +218,13 @@ namespace CRUDMahasiswaADO
         {
             if (string.IsNullOrEmpty(txtNIM.Text))
             {
-                MessageBox.Show("Pilih atau isi NIM yang ingin dihapus!");
+                MessageBox.Show("Pilih atau isi NIM yang ingin dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
 
-            if (MessageBox.Show("Hapus data NIM " + txtNIM.Text + "?", "Konfirmasi", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            // Pop-up Konfirmasi Hapus
+            if (MessageBox.Show($"Apakah anda yakin ingin menghapus permanen data NIM: {txtNIM.Text}?",
+                "Konfirmasi Hapus", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 try
                 {
@@ -232,7 +236,7 @@ namespace CRUDMahasiswaADO
                     int result = cmd.ExecuteNonQuery();
                     if (result > 0)
                     {
-                        MessageBox.Show("Data berhasil dihapus.");
+                        MessageBox.Show("Data berhasil dihapus selamanya.", "Hapus Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         ClearForm();
                         btnLoad_Click(null, null);
                     }
