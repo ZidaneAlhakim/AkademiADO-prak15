@@ -10,18 +10,45 @@ namespace CRUDMahasiswaADO
 {
     internal class DAL
     {
-        static string connectionString = "Data Source=LAPTOP-M60LBIQK\\ZIDANEAS; Initial Catalog=DBAkademikADO; Integrated Security=True";
+        
+        public static string GetLocalIPAddress()
+        {
+            string localIP = string.Empty;
+            try
+            {
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        localIP = ip.ToString();
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show("Error getting local IP address: " + ex.Message);
+            }
+            return localIP;
+        }
 
         public string GetConnectionString()
         {
-            return connectionString;
+            
+            return $"Data Source={GetLocalIPAddress()}\\ZIDANEAS; Initial Catalog=DBAkademikADO; Integrated Security=True;";
         }
 
-        SqlConnection conn = new SqlConnection(connectionString);
-
+        SqlConnection conn;
         SqlDataAdapter da;
         DataTable dtMahasiswa;
         DataTable dtProdi;
+
+        public DAL()
+        {
+            
+            conn = new SqlConnection(GetConnectionString());
+        }
 
         public int CountMhs()
         {
@@ -33,7 +60,6 @@ namespace CRUDMahasiswaADO
             SqlCommand cmd = new SqlCommand("sp_CountMahasiswa", conn);
             cmd.CommandType = CommandType.StoredProcedure;
 
-            // UBAH NAMA PARAMETER DI SINI MENJADI @Total
             SqlParameter outputParam = new SqlParameter("@Total", SqlDbType.Int);
             outputParam.Direction = ParameterDirection.Output;
 
@@ -188,12 +214,11 @@ namespace CRUDMahasiswaADO
                 conn.Open();
             }
 
-            // Menggunakan query biasa (seperti kodemu dulu), bukan Stored Procedure
             string query = "INSERT INTO LogError VALUES (GETDATE(), @psn)";
             SqlCommand cmd = new SqlCommand(query, conn);
 
             cmd.Parameters.AddWithValue("@psn", message);
-            cmd.CommandType = CommandType.Text; // <--- Ubah dari StoredProcedure menjadi Text
+            cmd.CommandType = CommandType.Text;
             cmd.ExecuteNonQuery();
         }
 
@@ -204,7 +229,6 @@ namespace CRUDMahasiswaADO
                 conn.Open();
             }
 
-            // UBAH QUERY-NYA DI SINI: tambahkan KodeProdi
             SqlCommand cmd = new SqlCommand("SELECT KodeProdi, NamaProdi FROM ProgramStudi", conn);
 
             cmd.CommandType = CommandType.Text;

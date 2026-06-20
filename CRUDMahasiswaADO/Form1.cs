@@ -11,18 +11,17 @@ namespace CRUDMahasiswaADO
 {
     public partial class Form1 : Form
     {
-        // 1. Deklarasi Class DAL
         DAL dbLogic = new DAL();
 
-        private readonly string connectionString = "Data Source=LAPTOP-M60LBIQK\\ZIDANEAS; Initial Catalog=DBAkademikADO; Integrated Security=True";
-        private readonly SqlConnection conn;
+        // Hapus hardcode string koneksi, langsung gunakan dari DAL
+        private SqlConnection conn;
         private BindingSource bindingSource = new BindingSource();
         private DataTable dtMahasiswa = new DataTable();
 
         public Form1()
         {
             InitializeComponent();
-            conn = new SqlConnection(connectionString);
+            conn = new SqlConnection(dbLogic.GetConnectionString());
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -38,13 +37,11 @@ namespace CRUDMahasiswaADO
             LoadData();
         }
 
-        // 2. Method Simpan Log (Sesuai Modul Halaman 16)
         private void simpanLog(string message)
         {
             dbLogic.InsertLog(message);
         }
 
-        // 3. Method Load Data (Sesuai Modul Halaman 15)
         private void LoadData()
         {
             try
@@ -52,20 +49,17 @@ namespace CRUDMahasiswaADO
                 bindingSource.DataSource = dbLogic.GetMhs();
                 dataGridView1.DataSource = bindingSource;
 
-                
                 DataGridViewImageColumn fotoColumn = (DataGridViewImageColumn)dataGridView1.Columns["Foto"];
                 fotoColumn.ImageLayout = DataGridViewImageCellLayout.Stretch;
 
                 HitungTotal();
 
-         
                 foreach (DataGridViewColumn col in dataGridView1.Columns)
                 {
                     Console.WriteLine("Name: " + col.Name + " DataPropertyName:" + col.DataPropertyName);
                 }
 
                 dataGridView1.Enabled = true;
-                
             }
             catch (Exception ex)
             {
@@ -74,7 +68,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // 4. Method Hitung Total (Sesuai Modul Halaman 15)
         private void HitungTotal()
         {
             try
@@ -106,7 +99,6 @@ namespace CRUDMahasiswaADO
             txtkodeProdi.DataBindings.Add("Text", bindingSource, "KodeProdi");
         }
 
-        // 5. Method Clear Form (Sesuai Modul Halaman 16)
         private void ClearForm()
         {
             txtNIM.Enabled = true;
@@ -117,7 +109,6 @@ namespace CRUDMahasiswaADO
             txtkodeProdi.Clear();
             dtpTanggalLahir.Value = DateTime.Now;
 
-            // Mengosongkan gambar
             fotoMhs.Image = null;
 
             txtNIM.Focus();
@@ -172,7 +163,6 @@ namespace CRUDMahasiswaADO
             LoadData();
         }
 
-        // 6. Tombol Insert (Sesuai Modul Halaman 17)
         private void btnInsert_Click(object sender, EventArgs e)
         {
             try
@@ -206,7 +196,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // 7. Tombol Update (Sesuai Modul Halaman 17)
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             try
@@ -240,7 +229,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // 8. Tombol Delete (Sesuai Modul Halaman 18)
         private void btnDelete_Click(object sender, EventArgs e)
         {
             try
@@ -267,7 +255,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // 9. Tombol Reset Data (Sesuai Modul Halaman 18)
         private void btnReset_Click(object sender, EventArgs e)
         {
             try
@@ -288,7 +275,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // 10. Tombol Test Injection (Sesuai Modul Halaman 19)
         private void btnTestInjection_Click(object sender, EventArgs e)
         {
             try
@@ -323,7 +309,6 @@ namespace CRUDMahasiswaADO
             this.Hide();
         }
 
-        // 11. Event DataGridView CellClick (Sesuai Modul Halaman 19)
         private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
@@ -335,9 +320,9 @@ namespace CRUDMahasiswaADO
                 cmbJK.Text = row[2].ToString();
                 dtpTanggalLahir.Value = Convert.ToDateTime(row[3]);
                 txtAlamat.Text = row[4].ToString();
-                txtkodeProdi.Text = row[6].ToString(); // Index 6 adalah Kode Prodi/Nama Prodi
+                txtkodeProdi.Text = row[6].ToString();
 
-                if (row[5] != DBNull.Value) // Index 5 adalah gambar Foto
+                if (row[5] != DBNull.Value)
                 {
                     byte[] imgBytes = (byte[])row[5];
                     using (MemoryStream ms = new MemoryStream(imgBytes))
@@ -351,11 +336,10 @@ namespace CRUDMahasiswaADO
                     fotoMhs.Image = null;
                 }
 
-                txtNIM.Enabled = false; // Disable NIM saat data dipilih agar tidak bisa diubah
+                txtNIM.Enabled = false;
             }
         }
 
-        // 12. Tombol Upload Gambar (Sesuai Modul Halaman 20)
         private void button6_Click(object sender, EventArgs e)
         {
             OpenFileDialog ofd = new OpenFileDialog();
@@ -368,7 +352,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // Tombol Import Form Excel (Modul Halaman 20)
         private void btnImpExcel_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog() { Filter = "Excel Workbook|*.xlsx" })
@@ -391,12 +374,7 @@ namespace CRUDMahasiswaADO
                             dataGridView1.DataSource = dt;
                             dataGridView1.Enabled = false;
 
-                            // btnImpDb.Enabled = true; // Aktifkan ini jika nama tombol import DB-mu btnImpDb
-
-                            // Matikan tombol lain saat load excel
-                            // btnInsert.Enabled = false;
-                            // btnUpdate.Enabled = false;
-                            // btnDelete.Enabled = false;
+                            btnImpDb.Enabled = true; // Sudah diaktifkan
                             btnLoad.Enabled = false;
                         }
                     }
@@ -404,7 +382,6 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        // Tombol Import ke Database (Modul Halaman 21-22)
         private void btnImpDb_Click(object sender, EventArgs e)
         {
             try
