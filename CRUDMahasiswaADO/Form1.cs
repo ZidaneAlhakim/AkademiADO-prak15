@@ -12,8 +12,6 @@ namespace CRUDMahasiswaADO
     public partial class Form1 : Form
     {
         DAL dbLogic = new DAL();
-
-        // Hapus hardcode string koneksi, langsung gunakan dari DAL
         private SqlConnection conn;
         private BindingSource bindingSource = new BindingSource();
         private DataTable dtMahasiswa = new DataTable();
@@ -49,8 +47,17 @@ namespace CRUDMahasiswaADO
                 bindingSource.DataSource = dbLogic.GetMhs();
                 dataGridView1.DataSource = bindingSource;
 
-                DataGridViewImageColumn fotoColumn = (DataGridViewImageColumn)dataGridView1.Columns["Foto"];
-                fotoColumn.ImageLayout = DataGridViewImageCellLayout.Stretch;
+                // FIX ANTI CRASH: Cek dulu apakah kolom foto ada
+                if (dataGridView1.Columns["Foto"] != null)
+                {
+                    DataGridViewImageColumn fotoColumn = (DataGridViewImageColumn)dataGridView1.Columns["Foto"];
+                    fotoColumn.ImageLayout = DataGridViewImageCellLayout.Stretch;
+                }
+                else if (dataGridView1.Columns["foto"] != null)
+                {
+                    DataGridViewImageColumn fotoColumn = (DataGridViewImageColumn)dataGridView1.Columns["foto"];
+                    fotoColumn.ImageLayout = DataGridViewImageCellLayout.Stretch;
+                }
 
                 HitungTotal();
 
@@ -169,6 +176,7 @@ namespace CRUDMahasiswaADO
             {
                 byte[] ConvertImageToBytes(PictureBox pb)
                 {
+                    if (pb.Image == null) return null;
                     using (MemoryStream ms = new MemoryStream())
                     {
                         pb.Image.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
@@ -202,6 +210,7 @@ namespace CRUDMahasiswaADO
             {
                 byte[] ConvertImageToBytes(PictureBox pb)
                 {
+                    if (pb.Image == null) return null;
                     using (MemoryStream ms = new MemoryStream())
                     {
                         pb.Image.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
@@ -400,7 +409,7 @@ namespace CRUDMahasiswaADO
                     string nama = row["Nama"].ToString().Trim();
                     string jk = row["JenisKelamin"].ToString().Trim();
                     string alamat = row["Alamat"].ToString().Trim();
-                    string kodeProdi = row["Nama Prodi"].ToString().Trim();
+                    string kodeProdi = row["NamaProdi"].ToString().Trim();
 
                     string fotoPath = row.Table.Columns.Contains("FotoPath")
                         ? row["FotoPath"].ToString().Trim()
